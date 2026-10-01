@@ -118,5 +118,26 @@ details{margin:8px 0}
 .lv-legend b{color:#18223b}
 .row-lv .lvbtn{justify-self:start;min-height:36px;padding:4px 12px;font-size:13px;margin-top:4px}
 
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.searchbox{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:#eef7f3;padding:8px 0 4px;margin-bottom:8px}
+#gsearch{width:100%;font-size:17px;padding:12px 16px;border-radius:14px;border:2px solid #b9e2d1;background:#fff}
+#gsearch:focus{border-color:#0f7a5c;outline:none}
+#gsearchResults{display:grid;gap:12px;margin-top:8px}
+#gsearchResults:empty{display:none}
+.sgroup{background:#fff;border:1px solid #e1e7f0;border-radius:16px;overflow:hidden}
+.sgroup h3{margin:0;padding:10px 16px;font-size:15px;background:#f8faff;border-bottom:1px solid #e1e7f0}
+.sgroup h3 small{color:#64708a;font-weight:400}
+.srow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid #eef2f8}
+.srow:last-child{border-bottom:0}
+.srow p{margin:1px 0}.srow .en{font-weight:700}.srow .tag{font-size:12px;color:#0f7a5c}
+.srow mark{background:#fff1a8;color:inherit;border-radius:3px;padding:0 1px}
+.sgroup .more{width:100%;border:0;border-radius:0;background:#f8faff;color:#0f7a5c;min-height:40px}
+/* 묶음 카드: 같은 줄 카드끼리 높이를 맞추고, 버튼은 카드 맨 아래에 붙여 옆 칸과 정렬 */
+.deck-grid{align-items:stretch}
+.deck-item{display:flex;flex-direction:column}
+.deck-item .deck-actions{margin-top:auto;padding-top:12px}
+.deck-item .deck-actions button{margin-top:0}
+.newonly-spacer{visibility:hidden}
+
 body{background:#eef7f3;color:#18223b}
 .seg{grid-template-columns:1fr 1fr}
