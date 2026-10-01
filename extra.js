@@ -110,7 +110,10 @@ function wordNext() {
   $('wordCatName').textContent = cat ? cat.emoji + ' ' + cat.title : '';
   $('wordPos').textContent = (pool.indexOf(w) + 1) + ' / ' + pool.length;
   $('wordEmoji').textContent = w.emoji;
+  // 이모지만으로 헷갈리지 않게 그림 바로 아래에 한국어 뜻(기본 켜짐). 끄면 힌트가 있는 단어만 힌트 표시.
   $('wordHint').textContent = $('wordKo').checked ? w.ko : (w.hint || '');
+  $('wordHint').classList.toggle('ko', $('wordKo').checked);
+  $('wordKoText').hidden = $('wordKo').checked;
   $('wordAsk').textContent = w.kind === 'action' ? '이 동작을 영어로?' : '영어로?';
   $('wordEn').textContent = w.en; $('wordKoText').textContent = w.ko;
   const s = w.sentence;
@@ -287,3 +290,10 @@ function updateStageCounts() {
   [...$('stage').options].forEach(o => { if (STAGE_LABEL[o.value]) o.textContent = `${STAGE_LABEL[o.value]} (${n[o.value]})`; });
 }
 refreshPatterns = (orig => () => { orig(); updateStageCounts(); })(refreshPatterns);
+
+// 단어 탭 체크 칸(한국어 뜻·예문 보기) 선택을 기억한다.
+['wordKo', 'wordSentence'].forEach(id => {
+  const el = $(id); if (!el) return;
+  try { const v = localStorage.getItem('loop-chk-' + id); if (v !== null) el.checked = v === '1'; } catch {}
+  el.addEventListener('change', () => { try { localStorage.setItem('loop-chk-' + id, el.checked ? '1' : '0'); } catch {} });
+});

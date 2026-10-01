@@ -142,6 +142,7 @@ details{margin:8px 0}
 .deck-empty{margin:0;padding:28px 20px;text-align:center;color:#4b5775;line-height:1.7;background:#fff}
 .edit-status{margin:10px 0 0;padding:10px 14px;border-radius:12px;background:#eaf6ee;color:#1f6b3d;font-size:14px}
 .edit-status.bad{background:#fff4ef;color:#9c4820}
+#wordHint.ko{font-size:clamp(22px,3vw,28px);font-weight:800;color:#18223b;margin:4px 0 0}
 
 body{background:#eef7f3;color:#18223b}
 .seg{grid-template-columns:1fr 1fr}
