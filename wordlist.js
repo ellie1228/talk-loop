@@ -20,6 +20,8 @@
   const s = document.createElement('script'); s.src = 'word-images.js';
   s.onload = () => { if (!$('words').hidden && !W.shown) wordNext(); if (!$('library').hidden) renderLibrary(); renderCredits(); };
   document.head.appendChild(s);
+  // 영어판 전용 '문법 뼈대' 연습(말하기 탭)도 여기서 불러온다
+  const g = document.createElement('script'); g.src = 'grammar.js'; document.head.appendChild(g);
   // 기록 탭 맨 아래 '사진 출처' 목록(CC BY·BY-SA 조건: 만든 사람·라이선스 표시)
   const cr = document.createElement('details'); cr.id = 'photoCredits'; cr.className = 'panel';
   cr.innerHTML = '<summary>사진 출처</summary><div id="photoCreditList" class="credit-list"></div>';
