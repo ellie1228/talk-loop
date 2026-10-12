@@ -1,8 +1,8 @@
-// 말하기 탭의 '문법' (문법 뼈대 연습): 레슨별 설명 표 + 한 군데만 바꾼 문장을 빠르게 반복.
+// 맨 아래 [문법] 탭 (문법 뼈대 연습): 레슨별 설명 표 + 한 군데만 바꾼 문장을 빠르게 반복.
 // 영어판 전용. wordlist.js가 이 파일을 불러오고, 이 파일이 레슨 데이터(basics-data.js)를 불러온다.
 // 기록은 따로 쌓인다(kind: 'gram'). extra.js·drill.js의 도우미(pickNext, statOf, playText, runAuto …)를 쓴다.
 'use strict';
-const G = { lesson: 'g1', guide: true, current: null, shown: false, started: 0, ms: 0, state: { seq: 0, recent: [] } };
+const G = { lesson: 'all', guide: true, current: null, shown: false, started: 0, ms: 0, state: { seq: 0, recent: [] } };
 const gramStat = statOf('gram');
 let GRAM_CARDS = [];
 
@@ -24,43 +24,53 @@ let GRAM_CARDS = [];
     #gramWrong{background:#fff4ef;color:#9c4820;border-color:#ffddcc}#gramRight{background:#1d49e8;color:#fff;border-color:#1d49e8}
     #gramGrading,#gramReveal{margin-top:10px}
     #gramMini{text-align:left;background:#f8faff;border-radius:12px;padding:6px 10px;margin-top:6px;width:100%}
+    .gram-frame{text-align:left;background:#f4fbf7;border:1px dashed #9fd6b9;border-radius:12px;padding:8px 12px;margin:2px 0}
+    .gram-frame p{margin:3px 0}.gf-head b{color:#1f6b3d}.gram-frame small{color:#64708a}
     .gram-list{margin:8px 0;padding-left:22px}.gram-list li{margin:6px 0}
     #gramDecks details{margin:6px 0}#gramDecks summary{font-weight:800;font-size:16px;cursor:pointer;padding:6px 0}
     #deckViewList .gram-sheet-guide{padding:10px 16px;background:#fff;border-bottom:1px solid #e1e7f0}
     .workspace>div{min-width:0}
     #gramGuideBtn{grid-column:1/-1}
+    .gram-home-actions{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}.gram-home-actions button{flex:1;min-width:220px}
+    .gram-unit{background:#fff;border:1px solid #dce4f2;border-radius:18px;padding:16px 18px;margin:0 0 12px}
+    .gram-unit-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.gram-unit-head h2{margin:0;font-size:19px}
+    .gram-unit-head button{white-space:nowrap;flex-shrink:0}#grammar h1{word-break:keep-all}
+    .gram-lessons{display:grid;gap:6px;margin-top:10px}
+    .gram-lesson-row{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid #eef2f8;padding-top:8px}
+    .gram-lesson-row small{display:block}.gram-lesson-btns{display:flex;gap:6px;flex-shrink:0}.gram-lesson-btns button{min-height:38px;padding:4px 12px}
+    #gramMastered small{font-size:.5em;color:#64708a}
+    @media(max-width:760px){nav button{padding:8px 2px;font-size:13px}.gram-lesson-row{flex-direction:column;align-items:stretch}.gram-lesson-btns button{flex:1}}
     @media(max-width:760px){.seg button{padding:8px 2px;font-size:13px;min-height:44px}.seg button small{display:none}}`;
   document.head.appendChild(style);
 
-  // 전환 버튼: 응용 바로 뒤에 [문법]
-  const btn = document.createElement('button');
-  btn.id = 'modeGram'; btn.setAttribute('role', 'tab'); btn.setAttribute('aria-selected', 'false');
-  btn.innerHTML = '문법<small>뼈대 연습</small>';
-  $('modeDrill').after(btn);
-  const seg = btn.parentElement; seg.style.gridTemplateColumns = `repeat(${seg.children.length},1fr)`;
-
+  // 맨 아래 탭: 말하기 바로 뒤에 [문법]. 화면 이름이 길어 '문장 목록'은 '목록'으로 줄인다
+  const tab = document.createElement('button'); tab.dataset.tab = 'grammar'; tab.textContent = '문법';
+  document.querySelector('nav [data-tab="practice"]').after(tab);
+  const lib = document.querySelector('nav [data-tab="library"]'); if (lib) lib.textContent = '목록';
+  tab.onclick = () => setTab('grammar');
+  const view = document.createElement('section'); view.id = 'grammar'; view.className = 'view'; view.hidden = true;
+  view.innerHTML = `<div class="heading"><div><p class="eyebrow">GRAMMAR</p><h1>뼈대부터 입에 붙이기.</h1></div><div class="today">완전히 외운 문장 <strong id="gramMastered">0</strong></div></div>
+    <div id="gramHome"><div class="gram-home-actions"><button id="gramAllBtn" class="primary">▶ 전체 순서대로 연습</button><button id="gramResumeBtn" class="auto" hidden></button></div><div id="gramUnits"></div></div>`;
+  $('practice').after(view);
   const ws = document.createElement('div');
   ws.className = 'workspace'; ws.id = 'gramWorkspace'; ws.hidden = true;
-  ws.innerHTML = `<aside><h2>문법 뼈대</h2><label>레슨<select id="gramLesson"></select></label>
+  ws.innerHTML = `<aside><button id="gramBack" class="textbutton" style="padding:0;min-height:32px;margin:0 0 6px;color:#1d49e8;font-weight:700">← 단원 목록</button><h2>문법 뼈대</h2><label>레슨<select id="gramLesson"></select></label>
     <button id="gramGuideBtn" class="auto" style="width:100%;margin:4px 0 10px">📖 설명 보기</button>
     <label>반복 방식<select id="gramOrder"><option value="sequence" selected>순서대로 익히기</option><option value="smart">오답 우선 · 골고루</option><option value="wrong">틀린 카드만</option><option value="new">새 카드만</option></select></label>
     <p class="muted small">같은 문장에서 한 군데만 바뀌어요. 파란 부분이 이번 레슨의 핵심이에요. 1~2초 안에 입에서 나오는 게 목표!</p></aside>
     <div><article class="card" id="gramGuide"></article>
     <article class="card drillcard" id="gramCard" hidden><div class="card-top"><span id="gramTag"></span><span id="gramPos"></span></div>
       <div class="prompt"><span id="gramForm" class="chip dir"></span><h2 id="gramKo"></h2><button id="gramMiniBtn" class="mini" aria-label="이 레슨 설명 보기">📖 설명</button><div id="gramMini" hidden></div></div>
-      <div id="gramAnswer" hidden><h3 id="gramEn" lang="en"></h3><p id="gramNote" class="muted"></p><div id="gramAlt" class="similar" hidden></div>
+      <div id="gramAnswer" hidden><h3 id="gramEn" lang="en"></h3><p id="gramNote" class="muted"></p><div id="gramAlt" class="similar" hidden></div><div id="gramFrame" class="gram-frame" hidden></div>
         <div class="row"><button id="gramListen">▷ 모범 음성 <kbd>R</kbd></button><button id="gramSlow">천천히 듣기</button></div></div>
       <button id="gramReveal" class="primary wide">정답 확인 <span>Space</span></button>
       <div id="gramGrading" class="grading" hidden><button id="gramWrong">✕ 아직 막혀요 <kbd>1</kbd></button><button id="gramRight">○ 바로 말했어요 <kbd>2</kbd></button></div>
       <button id="gramSkip" class="textbutton">건너뛰기</button>
       <div class="autobar"><button id="autoGram" class="auto">▶ 툭툭 넘기기</button><label>간격<select id="autoGramGap"><option value="2">2초</option><option value="3" selected>3초</option><option value="5">5초</option><option value="8">8초</option></select></label></div>
     </article><p class="hint" id="gramHint" hidden>Space 정답 · 1 다시 연습 · 2 맞음 · R 음성 · → 건너뛰기</p></div>`;
-  $('drillWorkspace').after(ws);
+  view.appendChild(ws);
 
-  SPEAK_MODES.gram = ['modeGram', 'gramWorkspace'];
-  SPEAK_ENTER.gram = () => { if (!G.guide && !G.current) gramNext(); };
   AUTO_BTN.gram = 'autoGram';
-  btn.onclick = () => setSpeakMode('gram');
 
   const s = document.createElement('script'); s.src = 'basics-data.js';
   s.onload = () => {
@@ -69,11 +79,10 @@ let GRAM_CARDS = [];
     const groups = gramGroups();
     $('gramLesson').innerHTML = `<option value="all">전체 레슨 순서대로 (${GRAM_CARDS.length})</option><option value="mix">전체 레슨 섞기 (${GRAM_CARDS.length})</option>` +
       groups.map(([gname, ls]) => `<optgroup label="${esc(gname)}">${groups.length > 1 ? `<option value="grp:${esc(gname)}">▸ ${esc(gname)} 단원 전체 (${ls.reduce((n, l) => n + l.cards.length, 0)})</option>` : ''}${ls.map(l => `<option value="${esc(l.id)}">${esc(l.title)} (${l.cards.length})</option>`).join('')}</optgroup>`).join('');
-    try { const v = localStorage.getItem('loop-gram-lesson'); if (v && [...$('gramLesson').options].some(o => o.value === v)) G.lesson = v; } catch {}
     renderGramDecks();
     $('gramLesson').value = G.lesson;
     showGuide(true);
-    try { if (localStorage.getItem('loop-speak-mode') === 'gram') setSpeakMode('gram'); } catch {}
+    renderGramHome();
   };
   document.head.appendChild(s);
 })();
@@ -81,9 +90,10 @@ let GRAM_CARDS = [];
 const gramLessons = () => window.BASICS?.lessons || [];
 const gramLessonData = (id = G.lesson) => gramLessons().find(l => l.id === id);
 // 단원(group)별로 레슨을 묶는다. Basic Grammar in Use 레슨은 group만 다르게 주면 자동으로 따로 묶인다.
-function gramGroups() { const m = new Map(); gramLessons().forEach(l => { const k = l.group || '기초 뼈대'; if (!m.has(k)) m.set(k, []); m.get(k).push(l); }); return [...m]; }
+function gramGroups() { const m = new Map(); gramLessons().forEach(l => { const k = l.group || '기초 뼈대'; if (!m.has(k)) m.set(k, []); m.get(k).push(l); }); const num = s => parseFloat(s) || 999; return [...m].sort((a, b) => num(a[0]) - num(b[0])); }
+const gramOrdered = () => gramGroups().flatMap(([, ls]) => ls);
 // 지금 고른 범위의 레슨들: 한 레슨 / 단원 전체 / 전체
-function gramSelected() { const v = G.lesson; if (v === 'all' || v === 'mix') return gramLessons(); if (v.startsWith('grp:')) return gramLessons().filter(l => (l.group || '기초 뼈대') === v.slice(4)); return gramLessons().filter(l => l.id === v); }
+function gramSelected() { const v = G.lesson; if (v === 'all' || v === 'mix') return gramOrdered(); if (v.startsWith('grp:')) return gramLessons().filter(l => (l.group || '기초 뼈대') === v.slice(4)); return gramLessons().filter(l => l.id === v); }
 const gramMulti = () => gramSelected().length !== 1;
 function gramTableHtml(l) {
   const t = l.table || {};
@@ -108,8 +118,8 @@ function showGuide(on) {
   } else if (!G.current || !sel.some(l => l.id === G.current.lesson)) gramNext();
 }
 function gramPool() {
-  const ids = new Set(gramSelected().map(l => l.id));
-  let a = GRAM_CARDS.filter(c => ids.has(c.lesson));
+  const order = gramSelected().map(l => l.id);
+  let a = order.flatMap(id => GRAM_CARDS.filter(c => c.lesson === id));
   const o = $('gramOrder').value;
   if (o === 'wrong') a = a.filter(c => { const s = gramStat(c.id); return s.wrong && !s.stable; });
   if (o === 'new') a = a.filter(c => !gramStat(c.id).tries);
@@ -131,6 +141,9 @@ function gramNext() {
   $('gramNote').textContent = c.note || '';
   $('gramAlt').hidden = !(c.alt || []).length;
   $('gramAlt').innerHTML = (c.alt || []).length ? `<p><b>같이 정답</b> <span lang="en">${esc(c.alt.join(' / '))}</span></p>` : '';
+  const f = c.frame;
+  $('gramFrame').hidden = !f;
+  $('gramFrame').innerHTML = f ? `<p class="gf-head">🔁 바꿔 말하기 <b lang="en">${esc(f.pattern)}</b> <small>${esc(f.ko || '')}</small></p>` + f.examples.map((x, i) => `<p class="gf-ex"><button class="mini" data-gfplay="${i}" aria-label="${esc(x.en)} 듣기">▷</button> <span lang="en">${esc(x.en)}</span> <small>${esc(x.ko)}</small></p>`).join('') : '';
   G.started = performance.now();
 }
 function gramReveal(sound = true) {
@@ -147,6 +160,7 @@ async function gramGrade(ok) {
 $('gramLesson').onchange = () => { G.lesson = $('gramLesson').value; G.state = { seq: 0, recent: [] }; G.current = null; try { localStorage.setItem('loop-gram-lesson', G.lesson); } catch {} showGuide(true); };
 $('gramOrder').onchange = () => { G.state = { seq: 0, recent: [] }; stopAuto(); if (!G.guide) gramNext(); };
 $('gramGuideBtn').onclick = () => showGuide(!G.guide);
+$('gramFrame').onclick = e => { const b = e.target.closest('[data-gfplay]'); if (b && G.current?.frame) playText(G.current.frame.examples[+b.dataset.gfplay].en); };
 $('gramMiniBtn').onclick = () => { const l = G.current && gramLessonData(G.current.lesson); if (!l) return; const m = $('gramMini'); if (m.hidden) m.innerHTML = gramTableHtml(l); m.hidden = !m.hidden; };
 $('gramReveal').onclick = () => gramReveal();
 $('gramRight').onclick = () => gramGrade(true);
@@ -163,7 +177,7 @@ $('autoGram').onclick = () => { if (G.guide) showGuide(false); runAuto('gram', a
   gramNext();
 }); };
 document.addEventListener('keydown', e => {
-  if ($('practice').hidden || $('gramWorkspace').hidden || /INPUT|TEXTAREA|SELECT|AUDIO|SUMMARY/.test(e.target.tagName) || e.isComposing || e.keyCode === 229 || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+  if ($('grammar').hidden || $('gramWorkspace').hidden || /INPUT|TEXTAREA|SELECT|AUDIO|SUMMARY/.test(e.target.tagName) || e.isComposing || e.keyCode === 229 || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.code;
   if (!['Space', 'Digit1', 'Numpad1', 'Digit2', 'Numpad2', 'KeyX', 'KeyO', 'KeyR', 'ArrowRight'].includes(k)) return;
   e.preventDefault(); e.stopImmediatePropagation();
@@ -172,9 +186,9 @@ document.addEventListener('keydown', e => {
   else if (k === 'KeyR' && G.current) playText(G.current.en); else if (k === 'ArrowRight') gramNext();
 }, true);
 // 탭에 다시 돌아오면 반응 시간을 다시 잰다
-setTab = (orig => name => { orig(name); if (G.current && !G.shown) G.started = performance.now(); })(setTab);
+setTab = (orig => name => { if (name !== 'grammar') stopAuto(); orig(name); if (name === 'grammar') { if ($('gramWorkspace').hidden) renderGramHome(); if (G.current && !G.shown) G.started = performance.now(); } })(setTab);
 // 기록 탭 진행 막대에 '문법' 줄
-(window.EXTRA_PROGRESS = window.EXTRA_PROGRESS || []).push(() => progressRow('문법 뼈대', GRAM_CARDS, gramStat, '장', () => startNewIn('practice', 'gramOrder', () => { setSpeakMode('gram'); showGuide(false); })));
+(window.EXTRA_PROGRESS = window.EXTRA_PROGRESS || []).push(() => progressRow('문법 뼈대', GRAM_CARDS, gramStat, '장', () => { setTab('grammar'); $('gramOrder').value = 'new'; openGramPractice('all', true); }));
 
 // ---------- 문장 목록 탭: 문법 레슨 (단원별로 접어서) ----------
 (() => {
@@ -215,7 +229,7 @@ function startGram(id) {
   $('deckView').hidden = true;
   G.lesson = id; G.state = { seq: 0, recent: [] }; G.current = null; $('gramLesson').value = id;
   try { localStorage.setItem('loop-gram-lesson', id); } catch {}
-  setTab('practice'); setSpeakMode('gram'); showGuide(false);
+  setTab('grammar'); openGramPractice(id, true);
 }
 viewDeck = (orig => (id, scroll) => { $('deckViewStart').removeAttribute('data-gstart'); orig(id, scroll); })(viewDeck);
 if (typeof viewWords === 'function') viewWords = (orig => id => { $('deckViewStart').removeAttribute('data-gstart'); orig(id); })(viewWords);
@@ -227,3 +241,33 @@ document.addEventListener('click', e => {
 });
 // 검색창에서 문법 문장도 찾기
 if (typeof searchIndex === 'function') searchIndex = (orig => () => { const r = orig(); r.splice(1, 0, { key: 'gram', title: '문법 뼈대', items: GRAM_CARDS.map(c => ({ ko: c.ko, en: c.en, tag: gramLessonData(c.lesson)?.title || '', extra: [...(c.alt || []), c.note, c.form] })) }); return r; })(searchIndex);
+
+// ---------- 문법 탭 첫 화면: 단원 목록 ----------
+function openGramPractice(sel, practice) {
+  G.lesson = sel; G.state = { seq: 0, recent: [] }; G.current = null;
+  if ([...$('gramLesson').options].some(o => o.value === sel)) $('gramLesson').value = sel;
+  $('gramHome').hidden = true; $('gramWorkspace').hidden = false;
+  try { localStorage.setItem('loop-gram-last', sel); } catch {}
+  showGuide(!practice);
+}
+function renderGramHome() {
+  if (!$('gramUnits')) return;
+  $('gramHome').hidden = false; $('gramWorkspace').hidden = true; stopAuto();
+  $('gramMastered').innerHTML = GRAM_CARDS.filter(c => gramStat(c.id).stable).length + '<small>/' + GRAM_CARDS.length + '</small>';
+  let last = ''; try { last = localStorage.getItem('loop-gram-last') || ''; } catch {}
+  const lastName = last === 'all' ? '전체 순서대로' : last === 'mix' ? '전체 섞기' : last.startsWith('grp:') ? last.slice(4) : gramLessonData(last)?.title;
+  $('gramResumeBtn').hidden = !lastName; $('gramResumeBtn').textContent = lastName ? `▶ 이어서 연습 · ${lastName}` : '';
+  $('gramResumeBtn').onclick = () => openGramPractice(last, true);
+  $('gramAllBtn').onclick = () => openGramPractice('all', true);
+  $('gramUnits').innerHTML = gramGroups().map(([gname, ls]) => {
+    const cs = GRAM_CARDS.filter(c => ls.some(l => l.id === c.lesson)), lv = levelCounts(cs, gramStat);
+    return `<section class="gram-unit"><div class="gram-unit-head"><div><h2>${esc(gname)}</h2><small class="muted">레슨 ${ls.length}개 · ${cs.length}문장</small></div><button class="auto" data-gunit="${esc(gname)}">▶ 단원 연습</button></div>${levelBar(lv, cs.length)}<span class="lvline">${levelLine(lv)}</span>
+      <div class="gram-lessons">${ls.map(l => { const lc = GRAM_CARDS.filter(c => c.lesson === l.id), llv = levelCounts(lc, gramStat); return `<div class="gram-lesson-row"><div><b>${esc(l.title)}</b><small class="muted">${esc(l.goal || '')} · ${lc.length}문장 · ${levelLine(llv).replace(/<[^>]+>/g, ' ').trim()}</small></div><div class="gram-lesson-btns"><button data-gopen="${esc(l.id)}">📖 설명</button><button class="primary" data-gpractice="${esc(l.id)}">연습</button></div></div>`; }).join('')}</div></section>`;
+  }).join('');
+}
+$('gramBack').onclick = () => renderGramHome();
+document.addEventListener('click', e => {
+  const u = e.target.closest('[data-gunit]'); if (u) openGramPractice('grp:' + u.dataset.gunit, true);
+  const o = e.target.closest('[data-gopen]'); if (o) openGramPractice(o.dataset.gopen, false);
+  const pr = e.target.closest('[data-gpractice]'); if (pr) openGramPractice(pr.dataset.gpractice, true);
+});
