@@ -149,5 +149,8 @@ details{margin:8px 0}
 .emoji.has-photo img{display:block;width:min(100%,320px);height:clamp(150px,30vw,210px);object-fit:cover;border-radius:16px;margin:0 auto;background:#eef1f6}
 .credit{font-size:11px;color:#8590a6;margin:2px 0 0}.credit:empty{display:none}.credit a{color:inherit}
 
+/* 휴대폰: 정답이 나오면 O·X 버튼을 화면 아래에 고정 */
+@media(max-width:760px){.grading:not([hidden]){position:sticky;bottom:0;z-index:5;background:#fff;margin-left:-6px;margin-right:-6px;padding:10px 6px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -10px 14px -12px rgba(24,34,59,.35);border-radius:14px 14px 0 0}}
+
 body{background:#eef7f3;color:#18223b}
 .seg{grid-template-columns:1fr 1fr}
