@@ -38,6 +38,9 @@ let GRAM_CARDS = [];
     .gram-lessons{display:grid;gap:6px;margin-top:10px}
     .gram-lesson-row{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid #eef2f8;padding-top:8px}
     .gram-lesson-row small{display:block}.gram-lesson-btns{display:flex;gap:6px;flex-shrink:0}.gram-lesson-btns button{min-height:38px;padding:4px 12px}
+    .gram-base{margin:6px auto 2px;max-width:560px;background:#f3f6fc;border:1px dashed #c9d5fb;border-radius:10px;padding:6px 12px;color:#33436a;font-size:15px}.gram-base b{color:#64708a;font-size:12px;margin-right:6px}
+    .gram-pick{background:#fff;border:1px solid #dce4f2;border-radius:18px;padding:14px 16px;margin:0 0 12px}.gram-pick label{display:block;font-weight:700;margin:0 0 8px}.gram-pick select{width:100%;margin-top:6px}
+    .gram-pick-btns{display:grid;grid-template-columns:1fr 2fr;gap:8px}.gram-units-title{font-size:15px;color:#64708a;margin:18px 4px 8px}
     #gramMastered small{font-size:.5em;color:#64708a}
     @media(max-width:760px){nav button{padding:8px 2px;font-size:13px}.gram-lesson-row{flex-direction:column;align-items:stretch}.gram-lesson-btns button{flex:1}}
     @media(max-width:760px){.seg button{padding:8px 2px;font-size:13px;min-height:44px}.seg button small{display:none}}`;
@@ -50,7 +53,7 @@ let GRAM_CARDS = [];
   tab.onclick = () => setTab('grammar');
   const view = document.createElement('section'); view.id = 'grammar'; view.className = 'view'; view.hidden = true;
   view.innerHTML = `<div class="heading"><div><p class="eyebrow">GRAMMAR</p><h1>뼈대부터 입에 붙이기.</h1></div><div class="today">완전히 외운 문장 <strong id="gramMastered">0</strong></div></div>
-    <div id="gramHome"><div class="gram-home-actions"><button id="gramAllBtn" class="primary">▶ 전체 순서대로 연습</button><button id="gramResumeBtn" class="auto" hidden></button></div><div id="gramUnits"></div></div>`;
+    <div id="gramHome"><div class="gram-pick"><label>오늘의 문법<select id="gramPick"></select></label><div class="gram-pick-btns"><button id="gramPickGuide">📖 설명</button><button id="gramPickGo" class="primary">▶ 연습 시작</button></div></div><div class="gram-home-actions"><button id="gramAllBtn" class="primary">▶ 전체 순서대로 연습</button><button id="gramResumeBtn" class="auto" hidden></button></div><p class="gram-units-title">단원별로 보기</p><div id="gramUnits"></div></div>`;
   $('practice').after(view);
   const ws = document.createElement('div');
   ws.className = 'workspace'; ws.id = 'gramWorkspace'; ws.hidden = true;
@@ -60,7 +63,7 @@ let GRAM_CARDS = [];
     <p class="muted small">같은 문장에서 한 군데만 바뀌어요. 파란 부분이 이번 레슨의 핵심이에요. 1~2초 안에 입에서 나오는 게 목표!</p></aside>
     <div><article class="card" id="gramGuide"></article>
     <article class="card drillcard" id="gramCard" hidden><div class="card-top"><span id="gramTag"></span><span id="gramPos"></span></div>
-      <div class="prompt"><span id="gramForm" class="chip dir"></span><h2 id="gramKo"></h2><button id="gramMiniBtn" class="mini" aria-label="이 레슨 설명 보기">📖 설명</button><div id="gramMini" hidden></div></div>
+      <div class="prompt"><span id="gramForm" class="chip dir"></span><p id="gramBase" class="gram-base" hidden></p><h2 id="gramKo"></h2><button id="gramMiniBtn" class="mini" aria-label="이 레슨 설명 보기">📖 설명</button><div id="gramMini" hidden></div></div>
       <div id="gramAnswer" hidden><h3 id="gramEn" lang="en"></h3><p id="gramNote" class="muted"></p><div id="gramAlt" class="similar" hidden></div><div id="gramFrame" class="gram-frame" hidden></div>
         <div class="row"><button id="gramListen">▷ 모범 음성 <kbd>R</kbd></button><button id="gramSlow">천천히 듣기</button></div></div>
       <button id="gramReveal" class="primary wide">정답 확인 <span>Space</span></button>
@@ -79,6 +82,7 @@ let GRAM_CARDS = [];
     const groups = gramGroups();
     $('gramLesson').innerHTML = `<option value="all">전체 레슨 순서대로 (${GRAM_CARDS.length})</option><option value="mix">전체 레슨 섞기 (${GRAM_CARDS.length})</option>` +
       groups.map(([gname, ls]) => `<optgroup label="${esc(gname)}">${groups.length > 1 ? `<option value="grp:${esc(gname)}">▸ ${esc(gname)} 단원 전체 (${ls.reduce((n, l) => n + l.cards.length, 0)})</option>` : ''}${ls.map(l => `<option value="${esc(l.id)}">${esc(l.title)} (${l.cards.length})</option>`).join('')}</optgroup>`).join('');
+    $('gramPick').innerHTML = $('gramLesson').innerHTML;
     renderGramDecks();
     $('gramLesson').value = G.lesson;
     showGuide(true);
@@ -136,6 +140,7 @@ function gramNext() {
   if (!c) { $('gramKo').textContent = $('gramOrder').value === 'new' ? '이 레슨의 새 카드를 모두 해봤어요!' : '이 조건에 맞는 카드가 없어요.'; $('gramForm').textContent = ''; $('gramPos').textContent = ''; return; }
   $('gramPos').textContent = (pool.indexOf(c) + 1) + ' / ' + pool.length;
   $('gramForm').textContent = c.form || '';
+  $('gramBase').hidden = !c.base; $('gramBase').innerHTML = c.base ? `<b>발판</b><span lang="en">${esc(c.base)}</span>` : '';
   $('gramKo').innerHTML = markSub(c.ko, c.ko_hl, 'gram-kohl');
   $('gramEn').innerHTML = markSub(c.en, c.hl, 'gram-hl');
   $('gramNote').textContent = c.note || '';
@@ -259,6 +264,10 @@ function renderGramHome() {
   $('gramResumeBtn').hidden = !lastName; $('gramResumeBtn').textContent = lastName ? `▶ 이어서 연습 · ${lastName}` : '';
   $('gramResumeBtn').onclick = () => openGramPractice(last, true);
   $('gramAllBtn').onclick = () => openGramPractice('all', true);
+  const pick = $('gramPick'); if (pick.options.length && ![...pick.options].some(o => o.value === pick.value && pick.dataset.touched)) { pick.value = [...pick.options].some(o => o.value === last) ? last : 'all'; }
+  pick.onchange = () => { pick.dataset.touched = '1'; };
+  $('gramPickGo').onclick = () => openGramPractice(pick.value, true);
+  $('gramPickGuide').onclick = () => openGramPractice(pick.value, false);
   $('gramUnits').innerHTML = gramGroups().map(([gname, ls]) => {
     const cs = GRAM_CARDS.filter(c => ls.some(l => l.id === c.lesson)), lv = levelCounts(cs, gramStat);
     return `<section class="gram-unit"><div class="gram-unit-head"><div><h2>${esc(gname)}</h2><small class="muted">레슨 ${ls.length}개 · ${cs.length}문장</small></div><button class="auto" data-gunit="${esc(gname)}">▶ 단원 연습</button></div>${levelBar(lv, cs.length)}<span class="lvline">${levelLine(lv)}</span>
