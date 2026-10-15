@@ -13,7 +13,8 @@ function playText(en, rate = 1) {
     modelAudio.pause();
     modelAudio.src = window.AUDIO_DATA?.[file] ? 'data:audio/mpeg;base64,' + window.AUDIO_DATA[file] : 'audio/' + file;
     modelAudio.playbackRate = rate; modelAudio.preservesPitch = true; modelAudio.webkitPreservesPitch = true;
-    return new Promise(res => { modelAudio.onended = res; modelAudio.onerror = res; modelAudio.play().catch(res); });
+    // 아이폰에서 끝 신호가 안 와도 멈추지 않게, 15초 뒤에는 다음으로 넘어간다.
+    return new Promise(res => { const t = setTimeout(res, 15000), done = () => { clearTimeout(t); res(); }; modelAudio.onended = done; modelAudio.onerror = done; modelAudio.play().catch(done); });
   }
   if (!window.speechSynthesis) return Promise.resolve();
   return new Promise(res => { const u = new SpeechSynthesisUtterance(en); u.lang = 'en-US'; u.rate = rate; u.onend = res; u.onerror = res; speechSynthesis.speak(u); });
@@ -68,14 +69,26 @@ function stopAuto() {
   btn.textContent = '▶ 툭툭 넘기기'; btn.classList.remove('running');
   auto.on = null; auto.token++; wake(false);
 }
+// 아이폰은 버튼을 누른 그 순간에 소리를 한 번 내야, 그 뒤 자동 재생을 허락한다(짧은 무음 재생).
+const SILENT_MP3 = 'data:audio/mpeg;base64,//NAxAAAAANIAAAAAExBTUUzLjEwMFVVVVVVVVVVVVVMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVX/80LEWwAAA0gAAAAAVVVVVVVVVVVVVVVVVVVVVVVVVVVMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVX/80DEpAAAA0gAAAAAVVVVVVVVVVVVVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsSjAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVTEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//NCxKMAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVTEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//NAxKQAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVX/80LEowAAA0gAAAAAVVVVVVVVVVVVVVVVVVVVVVVVVVVMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVX/80DEpAAAA0gAAAAAVVVVVVVVVVVVVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsSjAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//NCxKMAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV';
+function unlockAudio() {
+  try { modelAudio = modelAudio || new Audio(); modelAudio.src = SILENT_MP3; modelAudio.play().catch(() => {}); } catch {}
+}
 async function runAuto(tab, step) {
   if (auto.on === tab) { stopAuto(); stopAudio(); return; }
   stopAuto(); auto.on = tab; const token = ++auto.token;
+  unlockAudio();
   const btn = $(AUTO_BTN[tab]);
   btn.textContent = '■ 멈추기'; btn.classList.add('running'); wake(true);
-  while (auto.on === tab && auto.token === token) { await step(() => auto.on === tab && auto.token === token); }
+  await sleep(300);
+  while (auto.on === tab && auto.token === token) {
+    // 화면이 잠깐 가려져도 멈추지 않고, 다시 보이면 이어서 진행한다.
+    while (document.hidden && auto.on === tab && auto.token === token) await sleep(500);
+    await step(() => auto.on === tab && auto.token === token);
+  }
 }
-document.addEventListener('visibilitychange', () => { if (document.hidden) stopAuto(); });
+// 화면이 다시 켜지면 화면 꺼짐 방지를 다시 건다(가려지면 기기가 자동으로 풀어 버림).
+document.addEventListener('visibilitychange', () => { if (!document.hidden && auto.on) { auto.lock = null; wake(true); } });
 
 // ---------- 말하기 탭: 툭툭 넘기기 ----------
 $('autoPractice').onclick = () => runAuto('practice', async alive => {
@@ -86,7 +99,7 @@ $('autoPractice').onclick = () => runAuto('practice', async alive => {
   await sleep(gap); if (!alive()) return;
   const ac = $('autovoice').checked; $('autovoice').checked = false; reveal(); $('autovoice').checked = ac;
   await playText(current.en); if (!alive()) return;
-  await sleep(1500); if (!alive()) return;
+  await sleep(gap); if (!alive()) return;  // 영어 음성이 끝나고 같은 간격 뒤 다음 카드
   next();
 });
 
@@ -161,7 +174,7 @@ $('autoWords').onclick = () => runAuto('words', async alive => {
   await sleep(+$('autoWordsGap').value * 1000); if (!alive()) return;
   wordReveal(false); await playText(W.current.en); if (!alive()) return;
   if ($('wordSentence').checked && W.current.sentence?.en) { await sleep(500); if (!alive()) return; await playText(W.current.sentence.en); if (!alive()) return; }
-  await sleep(1200); if (!alive()) return;
+  await sleep(+$('autoWordsGap').value * 1000); if (!alive()) return;
   wordNext();
 });
 

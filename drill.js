@@ -111,7 +111,7 @@ $('autoDrill').onclick = () => runAuto('drill', async alive => {
   if (d.type === 'C') { for (const e of d.examples) { await playText(e); if (!alive()) return; await sleep(700); } }
   else await playText(d.en);
   if (!alive()) return;
-  await sleep(1500); if (!alive()) return;
+  await sleep(+$('autoDrillGap').value * 1000); if (!alive()) return;
   drillNext();
 });
 

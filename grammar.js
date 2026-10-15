@@ -178,7 +178,7 @@ $('autoGram').onclick = () => { if (G.guide) showGuide(false); runAuto('gram', a
   if (!G.current) return stopAuto();
   await sleep(+$('autoGramGap').value * 1000); if (!alive()) return;
   gramReveal(false); await playText(G.current.en); if (!alive()) return;
-  await sleep(1300); if (!alive()) return;
+  await sleep(+$('autoGramGap').value * 1000); if (!alive()) return;
   gramNext();
 }); };
 document.addEventListener('keydown', e => {
