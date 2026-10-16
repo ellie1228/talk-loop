@@ -43,7 +43,7 @@ let GRAM_CARDS = [];
     .gram-pick-btns{display:grid;grid-template-columns:1fr 2fr;gap:8px}.gram-units-title{font-size:15px;color:#64708a;margin:18px 4px 8px}
     #gramMastered small{font-size:.5em;color:#64708a}
     @media(max-width:760px){nav button{padding:8px 2px;font-size:13px}.gram-lesson-row{flex-direction:column;align-items:stretch}.gram-lesson-btns button{flex:1}}
-    @media(max-width:760px){.seg button{padding:8px 2px;font-size:13px;min-height:44px}.seg button small{display:none}}`;
+    @media(max-width:760px){.seg button{padding:8px 2px;font-size:13px;min-height:44px}.seg button small{display:block;font-size:11px;line-height:1.3;margin-top:2px}}`;
   document.head.appendChild(style);
 
   // 맨 아래 탭: 말하기 바로 뒤에 [문법]. 화면 이름이 길어 '문장 목록'은 '목록'으로 줄인다
