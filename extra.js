@@ -188,7 +188,7 @@ const MODE_INFO = {
 };
 function listenPool() {
   const deck = $('listenDeck').value, mode = $('listenMode').value;
-  let a = cards().filter(c => !c.image && (deck === 'all' || c.deck === deck));
+  let a = cards().filter(c => !c.image && (/^all/.test(deck) || c.deck === deck));
   if (mode === 'answer') a = a.filter(c => /\?\s*$/.test(c.en));
   return a;
 }
@@ -301,6 +301,22 @@ document.addEventListener('keydown', e => {
 $('visual').value = 'mixed'; $('visual').closest('label').hidden = true;
 $('wordCount').innerHTML = WORD_LIST.filter(x => wordStat(x.id).stable).length + '<small>/' + WORD_LIST.length + '</small>';
 
+// 말하기 묶음 메뉴에 '전체 묶음 순서대로'(01번 묶음부터 끝까지 차례대로)를 더한다.
+// 한 묶음 연습 → 전체 쭉 → 모든 묶음 섞기 순서로 넓혀 갈 수 있게.
+(function () {
+  const sel = $('deck'); if (!sel) return;
+  // 묶음 목록은 앱이 나중에 채우므로, 채워질 때마다 이 항목이 있는지 확인해 넣는다.
+  const addOpt = () => { const all = sel.querySelector('[value="all"]'); if (!all || sel.querySelector('[value="allseq"]')) return;
+    const o = document.createElement('option'); o.value = 'allseq'; o.textContent = '전체 묶음 순서대로 (01번부터)'; all.before(o); };
+  addOpt(); new MutationObserver(addOpt).observe(sel, { childList: true });
+  eligible = (orig => () => {
+    if (sel.value !== 'allseq') return orig();
+    sel.value = 'all'; let a; try { a = orig(); } finally { sel.value = 'allseq'; }
+    const rank = new Map(DECKS.map((d, i) => [d.id, i]));
+    return a.map((c, i) => [c, i]).sort((x, y) => (rank.get(x[0].deck) ?? 999) - (rank.get(y[0].deck) ?? 999) || x[1] - y[1]).map(x => x[0]);
+  })(eligible);
+  sel.addEventListener('change', () => { if (sel.value === 'allseq' && $('order').value !== 'sequence') { $('order').value = 'sequence'; seq = 0; recent = []; next(); } });
+})();
 // 반복 방식 선택을 기억한다(처음엔 '순서대로', 나중에 '오답 우선'으로 바꾸면 그대로 유지).
 ['order', 'stage', 'drillOrder', 'wordOrder', 'bizOrder'].forEach(id => {
   const el = $(id); if (!el) return;
@@ -311,7 +327,7 @@ $('wordCount').innerHTML = WORD_LIST.filter(x => wordStat(x.id).stable).length +
 // 학습 단계 메뉴에 이 묶음에서 몇 문장이 나오는지 표시한다.
 const STAGE_LABEL = { ordered: '전체 · 기초부터 순서대로', core: '기초 필수부터', pattern: '같은 틀로 바꿔 말하기', extended: '상황 확장', all: '모든 단계 섞기' };
 function updateStageCounts() {
-  const deck = $('deck').value, inDeck = cards().filter(c => deck === 'all' || c.deck === deck);
+  const deck = /^all/.test($('deck').value) ? 'all' : $('deck').value, inDeck = cards().filter(c => deck === 'all' || c.deck === deck);
   const patternIds = new Set(PATTERNS.filter(p => deck === 'all' || p.deck === deck).flatMap(p => p.cardIds));
   const n = { ordered: inDeck.length, all: inDeck.length, core: inDeck.filter(c => (c.stage || 'core') === 'core').length, extended: inDeck.filter(c => c.stage === 'extended').length, pattern: cards().filter(c => patternIds.has(c.id)).length };
   [...$('stage').options].forEach(o => { if (STAGE_LABEL[o.value]) o.textContent = `${STAGE_LABEL[o.value]} (${n[o.value]})`; });
